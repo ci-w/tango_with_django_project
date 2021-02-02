@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<!-- that has to appear on the first line -->
+
+{% load staticfiles %}
+
+<html>
+
+	<head>
+		<title>Rango</title>
+	</head>
+	
+	<body>
+		<h1>Rango says...</h1>
+		<div>
+			here is the about page. <br />
+			<strong>{{ boldmessage }}</strong><br />
+		</div>
+		<div>
+			<a href="/rango/">Index</a><br />
+			<img src="{% static 'images/cat.jpg' %}" alt="Picture of Cat" />
+			<img src="{{MEDIA_URL}}finly.jpg" alt="Picture of Finly." />
+		</div>
+	</body>
+	
+</html>
