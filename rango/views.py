@@ -8,6 +8,8 @@ from rango.models import Page
 from rango.forms import CategoryForm
 from rango.forms import PageForm
 
+
+
 def index(request):
     #Query the database for a list of all categories currently stored, order them by
     #likes, descending. Retrieve the top 5 only -- or all if less than 5
@@ -68,7 +70,7 @@ def add_category(request):
             #save the new category to the database
             form.save(commit=True)
             #redirect user back to index view
-            return redirect('/rango/')
+            return redirect(reverse('rango:index'))
         else:
             #the form contains errors, print them to terminal
             print(form.errors)
@@ -84,7 +86,7 @@ def add_page(request, category_name_slug):
 
     #Can't add page to a category that doesn't exist
     if category is None:
-        return redirect('/rango/')
+        return redirect(reverse('rango:index'))
 
     form = PageForm()
 
