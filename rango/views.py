@@ -1,3 +1,6 @@
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.decorators import login_required
+from django.urls import reverse
 from django.shortcuts import render
 from django.shortcuts import redirect
 from django.shortcuts import reverse
@@ -7,7 +10,7 @@ from rango.models import Category
 from rango.models import Page
 from rango.forms import CategoryForm
 from rango.forms import PageForm
-
+from rango.forms import UserForm, UserProfileForm
 
 
 def index(request):
@@ -59,7 +62,7 @@ def show_category(request, category_name_slug):
     #render response and return it to client
     return render(request, 'rango/category.html', context=context_dict)
 
-
+@login_required
 def add_category(request):
     form = CategoryForm()
 
@@ -78,6 +81,7 @@ def add_category(request):
     #Handles bad form, new form, or no form supplied cases
     return render(request, 'rango/add_category.html', {'form': form})
 
+@login_required
 def add_page(request, category_name_slug):
     try:
         category = Category.objects.get(slug=category_name_slug)
@@ -108,5 +112,81 @@ def add_page(request, category_name_slug):
 
     context_dict = {'form': form, 'category': category}
     return render(request, 'rango/add_page.html', context=context_dict)
+
+def register(request):
+    #boolean value for telling the template if registration was successful
+    registered = False
+
+    if request.method == 'POST':
+        #takes information from raw form information
+        user_form = UserForm(request.POST)
+        profile_form = UserProfileForm(request.POST)
+
+        #If both forms are valid
+        if user_form.is_valid() and profile_form.is_valid():
+            #save users form data to database
+            user = user_form.save()
+
+            #hash password and update user object
+            user.set_password(user.password)
+            user.save()
+
+            #sort out UserProfile instance
+            #need to set user attrib ourselves, so set commit=False to avoid
+            #integrety problems
+            profile = profile_form.save(commit=False)
+            profile.user = user
+
+            if 'picture' in request.FILES:
+                profile.picture = request.FILES['picture']
+
+            profile.save()
+
+            registered = True
+
+        else:
+            #print problems to terminal
+            print(user_form.errors, profile_form.errors)
+    else:
+        #Not a HTTP POST, so render our form using two ModelForm instances
+        user_form = UserForm()
+        profile_form = UserProfileForm()
+
+    return render(request, 'rango/register.html',
+                  context = {'user_form': user_form,
+                             'profile_form': profile_form,
+                             'registered': registered})
+
+def user_login(request):
+    if request.method == 'POST':
+        #raises KeyError exception if value doesn't exist
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+
+        #use Django to see if they're valid
+        user = authenticate(username=username, password=password)
+
+        if user:
+            if user.is_active:
+                #log user in and send back to homepage
+                login(request, user)
+                return redirect(reverse('rango:index'))
+            else:
+                return HttpResponse("Your Rango account is disabled.")
+        else:
+            #Bad login details. cant log user in
+            print(f"Invalid login details: {username},{password}")
+            return HttpResponse("Invalid login details supplied.")
+    else:
+        return render(request, 'rango/login.html')
+
+@login_required
+def restricted(request):
+    return render(request, 'rango/restricted.html')
+
+@login_required
+def user_logout(request):
+    logout(request)
+    return redirect(reverse('rango:index'))
         
 
